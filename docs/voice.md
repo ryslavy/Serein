@@ -573,19 +573,28 @@ synthetic NVENC share after waiting for the teardown. Adding `--no-wait` exits d
 teardown and reproduces the crash (driver 615.78.08 on an RTX 3070); nothing is captured
 and no call is joined.
 
-System audio defaults off on Linux and Windows. It shares other applications' playback,
-even when sharing one window, and excludes Serein's own audio, including call playback
-and watched streams. Exclusion happens at capture on the sender: a viewer cannot remove
-their voice once another sender has mixed it into stream audio. Other apps' notifications
-and audio remain included. macOS retains ScreenCaptureKit's current-process exclusion.
+System audio defaults off on Linux and Windows. On Windows and on Linux under niri
+(`NIRI_SOCKET` set for a portal-backed share), sharing a window captures only that
+window's owning process tree; on other Linux desktops, and for full-screen shares,
+it shares other admissible applications' playback, and excludes Serein's own audio,
+including call playback and watched streams. Exclusion happens at capture on the sender:
+a viewer cannot remove their voice once another sender has mixed it into stream audio.
+Other apps' notifications and audio remain included. macOS retains ScreenCaptureKit's
+current-process exclusion.
 
 Linux captures individual playback streams through PulseAudio's per-stream monitor API,
-also implemented by PipeWire's PulseAudio server. It excludes Serein and streams whose
-application identity cannot be established; it never falls back to a whole-output monitor
-or microphone. The ScreenCast portal grants video only; audio uses the existing desktop
-audio access, including Flatpak's PulseAudio socket permission. A separate bounded worker
-handles discovery, capture and mixing outside video encoding and rendering. No applications
-are moved between outputs and no virtual device is installed.
+also implemented by PipeWire's PulseAudio server. It completes missing stream process
+identity from the matching PulseAudio client listing (`pa_context_get_client_info_list`),
+excludes Serein, loopback/combine streams (`node.link-group`), mixer/effect processors,
+and streams whose application identity cannot be established, and skips a stream whose
+sink is not listed yet until the next poll rather than stopping the worker; it never falls
+back to a whole-output monitor or microphone. On niri, a separate bounded IPC worker
+queries `Casts` and `Windows` to resolve the shared window's owning process tree (staying
+fail-closed on pending, cleared, or unresolved targets). The ScreenCast portal grants video
+only; audio uses the existing desktop audio access, including Flatpak's PulseAudio socket
+permission. A separate bounded worker handles discovery, capture and mixing outside video
+encoding and rendering. No applications are moved between outputs and no virtual device is
+installed.
 
 Windows uses native process loopback. Sharing a window captures only that window's
 application; Store app windows belong to ApplicationFrameHost, so they capture like a screen

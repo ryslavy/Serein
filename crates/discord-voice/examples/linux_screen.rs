@@ -1,5 +1,7 @@
 //! Offline debug check for the actual Linux pipeline and portal cancellation.
 //! No screen picker, display capture, microphone or network connection is opened.
+//! Exercises `Mode::Software` (or `--legacy-vaapi` for `Mode::VaLegacy`); does
+//! not run `Mode::Va` or verify VA-API border padding pixels.
 // This runnable debug example includes implementation modules, not their unit-test harnesses.
 #![cfg(not(test))]
 #![allow(dead_code)]

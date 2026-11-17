@@ -461,13 +461,17 @@ dependency, and shares the whole desktop. No direct capture starts after a faile
 cancelled portal request. X11 capture and live delivery remain unverified.
 
 Optional Linux stream audio uses native `libpulse` per-application monitoring on
-PulseAudio or PipeWire's PulseAudio server. Source builds need the libpulse development
+PulseAudio or PipeWire's PulseAudio server, completing missing stream identity from
+its PulseAudio client and scoping portal window shares on niri (`NIRI_SOCKET`) to that
+window's owning process tree while capturing all eligible non-Serein applications on
+other desktops. Source builds need the libpulse development
 package (`libpulse-dev`, `pulseaudio-libs-devel`, `libpulse-devel` or Arch's `libpulse`).
 The existing Flatpak PulseAudio socket permission covers this access; the ScreenCast
 portal's PipeWire remote grants video only. Windows uses native process loopback: one
 exclude-Serein capture on build 20348+ (Windows 11 / Server 2022), and per-application
-captures on older Windows 10 builds. Both exclude Serein's playback. Sharing a window captures
-only that window's application, as Discord does; sharing a screen captures other applications. There is no whole-output fallback. Hardware
+captures on older Windows 10 builds. Both exclude Serein's playback. Sharing a window on
+Windows (or on Linux under niri) captures
+only that window's application/process tree, as Discord does; sharing a screen captures other applications. There is no whole-output fallback. Hardware
 exclusion and receiving sound in an official client remain unverified.
 
 ## High-resolution video attachments

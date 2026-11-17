@@ -1055,7 +1055,8 @@ local media handoff, not PulseAudio/WASAPI capture, speaker output, or Discord f
 Discord's [August 2025 patch notes](https://discord.com/blog/discord-patch-notes-august-4-2025)
 confirm Linux application-audio sharing; older articles saying Linux audio is unavailable
 are outdated. Unlike Discord's selected-application mode, Serein currently captures other
-eligible applications too, even when sharing one window, excluding its own playback.
+eligible applications too on non-niri Linux desktops (on Windows and on Linux under
+niri, window shares match only that window's process tree), excluding its own playback.
 
 September 12 local-preview update: DM and guild call stages display the owner's
 camera and a bounded screen-share preview while waiting alone. Local capture is
@@ -1091,20 +1092,25 @@ measured performance, packaging or live Discord interoperability.
 System audio extension (September 15, 2026): Linux PulseAudio/PipeWire application monitors
 and Windows process loopback feed the existing stereo Opus/DAVE stream audio sender.
 Both are opt-in and exclude Serein's playback, including received call and stream audio.
-Other applications are included even for a single-window share, except on Windows, where a
-window share carries only that window's application. macOS ScreenCaptureKit
+Other applications are included even for a single-window share on Linux compositors other
+than niri; on Windows and on Linux under niri (`NIRI_SOCKET` for portal shares), a window
+share carries only that window's owning process tree (failing closed on pending, cleared, or
+unresolved niri targets). macOS ScreenCaptureKit
 continues excluding the current process. Windows uses native process-tree exclusion on build
 20348+ and per-application inclusion on older Windows 10 builds; a capture that fails reports
 its error visibly, without whole-output fallback.
 Linux uses `pa_stream_set_monitor_stream` before connecting each recording stream,
-rejects Serein/unknown application identities and disables recording-stream movement.
+completes missing stream identity from `pa_context_get_client_info_list`, rejects
+Serein/loopback/mixer/unknown identities, and disables recording-stream movement.
 Audio access is separate from portal-approved video, using the existing PulseAudio socket.
 See [audio behavior and owner test steps](voice.md#screen-sharing).
 
 Audio chunks are at most 9,600 floats / 38,400 bytes (100 ms). The capture channel holds
-four chunks / 153,600 bytes. Linux admits at most 32 identified application streams,
-each with at most 100 ms / 38,400 bytes of pending PCM (1,228,800 bytes total), and
-limits each discovery response to 256 entries. Excess streams fail visibly.
+four chunks / 153,600 bytes. Linux filters and scopes streams before bounding to at most
+32 admitted application streams (excess streams are truncated rather than failing the
+worker), each with at most 100 ms / 38,400 bytes of pending PCM (1,228,800 bytes total),
+limits each discovery response to 256 entries, and bounds niri `Casts`/`Windows` IPC
+queries to a 100 ms reply deadline, 512 KiB reply buffer and 5 s stale expiry.
 The transport reserves 9,600 floats / 38,400 bytes, trims before appending, drains a
 bounded queue snapshot and sends at most one 20 ms frame per tick. Current processing
 buffers and native audio-server/driver storage are additional. Rekeys and stalls clear
